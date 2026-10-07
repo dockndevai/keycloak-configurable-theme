@@ -44,7 +44,9 @@ class BrandingValidatorTest {
         assertFalse(BrandingValidator.validate(Map.of("borderRadius", "8px; color: red")).isValid());
         assertTrue(BrandingValidator.validate(Map.of("fontFamily", "'Inter', \"Open Sans\", sans-serif")).isValid());
         assertFalse(BrandingValidator.validate(Map.of("fontFamily", "Inter; } body { x")).isValid());
-        assertFalse(BrandingValidator.validate(Map.of("layout", "sideways")).isValid());
+        assertTrue(BrandingValidator.validate(Map.of("layout", "card-left")).isValid(), "custom layout names are allowed");
+        assertFalse(BrandingValidator.validate(Map.of("layout", "../evil")).isValid());
+        assertFalse(BrandingValidator.validate(Map.of("layout", "has space")).isValid());
     }
 
     @Test

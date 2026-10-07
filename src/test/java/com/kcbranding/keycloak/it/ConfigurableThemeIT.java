@@ -54,6 +54,8 @@ class ConfigurableThemeIT {
                             "/opt/keycloak/conf/branding.json")
                     .withCopyFileToContainer(MountableFile.forClasspathResource("it/it-logo.svg"),
                             "/opt/keycloak/branding/it-logo.svg")
+                    .withCopyFileToContainer(MountableFile.forClasspathResource("it/layouts/it-file-layout.css"),
+                            "/opt/keycloak/branding/layouts/it-file-layout.css")
                     .withEnv("KC_SPI_BRANDING__DEFAULT__RELOAD_INTERVAL", "1");
 
     private static final HttpClient HTTP = HttpClient.newBuilder()
@@ -212,7 +214,61 @@ class ConfigurableThemeIT {
         assertTrue(html.contains("Branded email footer"), html);
     }
 
+    @Test
+    void layoutFilesInTheAssetsDirectoryArePluggable() throws Exception {
+        createRealm("plug-file", null);
+        assertEquals(200, send("PATCH", "/admin/realms/plug-file/branding", token(),
+                "{\"layout\":\"it-file-layout\",\"heroTitle\":\"File layout\"}").statusCode());
+
+        String html = loginPage("plug-file").body();
+        assertTrue(html.contains("cfg-layout-split-right cfg-layout-it-file-layout"), "base + custom classes");
+        assertTrue(html.contains("class=\"cfg-hero\""), "inherits the split layout's hero markup");
+        assertTrue(html.contains("/realms/plug-file/branding/layouts/it-file-layout.css?v="));
+
+        HttpResponse<String> css = get("/realms/plug-file/branding/layouts/it-file-layout.css");
+        assertEquals(200, css.statusCode());
+        assertTrue(css.body().contains("#123abc"));
+
+        String layouts = send("GET", "/admin/realms/plug-file/branding/layouts", token(), null).body();
+        assertTrue(layouts.contains("{\"name\":\"it-file-layout\",\"source\":\"file\",\"extends\":\"split-right\"}"), layouts);
+        assertTrue(layouts.contains("\"name\":\"minimal\""));
+    }
+
+    @Test
+    void uploadedLayoutsArePluggableAndValidated() throws Exception {
+        createRealm("plug-api", null);
+        String css = "/* extends: minimal */\nbody.cfg-layout-glass .pf-v5-c-login__main { opacity: .9; }";
+        assertEquals(204, sendText("PUT", "/admin/realms/plug-api/branding/layouts/glass", css).statusCode());
+        assertEquals(200, send("PATCH", "/admin/realms/plug-api/branding", token(), "{\"layout\":\"glass\"}").statusCode());
+
+        String html = loginPage("plug-api").body();
+        assertTrue(html.contains("cfg-layout-minimal cfg-layout-glass"));
+        assertEquals(css, get("/realms/plug-api/branding/layouts/glass.css").body());
+
+        // Unknown layouts and built-in names are rejected
+        HttpResponse<String> unknown = send("PATCH", "/admin/realms/plug-api/branding", token(), "{\"layout\":\"does-not-exist\"}");
+        assertEquals(400, unknown.statusCode());
+        assertTrue(unknown.body().contains("unknown layout"));
+        assertEquals(400, sendText("PUT", "/admin/realms/plug-api/branding/layouts/centered", "body{}").statusCode());
+        assertEquals(400, sendText("PUT", "/admin/realms/plug-api/branding/layouts/Bad_Name", "body{}").statusCode());
+
+        // Deleting a layout that is still selected falls back to centered instead of breaking the page
+        assertEquals(204, send("DELETE", "/admin/realms/plug-api/branding/layouts/glass", token(), null).statusCode());
+        String fallback = loginPage("plug-api").body();
+        assertTrue(fallback.contains("cfg-layout-centered"));
+        assertFalse(fallback.contains("layouts/glass.css"));
+        assertEquals(404, get("/realms/plug-api/branding/layouts/glass.css").statusCode());
+    }
+
     // ---------------------------------------------------------------------------------------------
+
+    private static HttpResponse<String> sendText(String method, String path, String css) throws Exception {
+        return HTTP.send(HttpRequest.newBuilder(URI.create(base + path))
+                .method(method, HttpRequest.BodyPublishers.ofString(css))
+                .header("Content-Type", "text/css")
+                .header("Authorization", "Bearer " + token())
+                .build(), HttpResponse.BodyHandlers.ofString());
+    }
 
     private static void createRealm(String name, String loginTheme) {
         RealmRepresentation realm = new RealmRepresentation();

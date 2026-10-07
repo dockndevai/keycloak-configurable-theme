@@ -21,6 +21,10 @@ mvn -DskipITs package && docker compose -f docker/docker-compose.yml up
 2. Use the setting in `CssGenerator` (for CSS variables) or `BrandingBean` (for templates).
 3. Add tests and update the settings table in the README.
 
+## Adding a layout
+
+Most layouts don't need code. Write a CSS file with a leading `/* extends: <built-in> */` comment, drop it into `docker/assets/layouts/` and select it (see "Custom layouts" in the README). Only a layout that needs new HTML requires changes to `template.ftl`, plus a new built-in option in `BrandingField.LAYOUT`.
+
 ## Pull requests
 
 - Keep changes focused, and add or adjust tests.

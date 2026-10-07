@@ -90,6 +90,10 @@ public class BrandingUiTabProviderFactory implements UiTabProviderFactory<Compon
         if (!result.isValid()) {
             throw new ComponentValidationException(String.join("; ", result.errors()));
         }
+        String layout = result.values().get(BrandingField.LAYOUT.key());
+        if (layout != null && session.getProvider(BrandingProvider.class).findLayout(realm, layout).isEmpty()) {
+            throw new ComponentValidationException("Unknown layout '" + layout + "'");
+        }
     }
 
     @Override

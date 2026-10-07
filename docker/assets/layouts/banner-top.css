@@ -1,0 +1,44 @@
+/* extends: split-left */
+/*
+ * banner-top: reuses the split layout's hero panel (logo, title, text) but stacks it as a banner above
+ * the form instead of beside it. Plug-in layout: no rebuild needed. Select it with "layout": "banner-top".
+ */
+body.cfg-layout-banner-top .pf-v5-c-login {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto 1fr;
+    align-items: start;
+}
+
+body.cfg-layout-banner-top .cfg-hero {
+    display: flex;
+    min-height: 0;
+    padding: var(--pf-v5-global--spacer--2xl) var(--pf-v5-global--spacer--lg);
+    text-align: center;
+}
+
+body.cfg-layout-banner-top .cfg-hero__content {
+    max-width: 48rem;
+}
+
+body.cfg-layout-banner-top .cfg-hero__logo {
+    margin-inline: auto;
+    margin-bottom: var(--pf-v5-global--spacer--md);
+}
+
+body.cfg-layout-banner-top .cfg-hero__title {
+    font-size: 2rem;
+}
+
+/* The hero already shows the logo: drop the header row so the card sits right under the banner. */
+body.cfg-layout-banner-top #kc-header {
+    display: none;
+}
+
+body.cfg-layout-banner-top .pf-v5-c-login__container {
+    grid-template-areas: "main" "footer";
+    padding-top: var(--pf-v5-global--spacer--xl);
+}
+
+body.cfg-layout-banner-top .cfg-footer {
+    grid-area: footer;
+}

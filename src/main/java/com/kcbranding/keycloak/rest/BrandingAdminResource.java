@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.kcbranding.keycloak.config.BrandingField;
+import com.kcbranding.keycloak.config.BrandingLayout;
 import com.kcbranding.keycloak.config.BrandingValidator;
 import com.kcbranding.keycloak.spi.BrandingProvider;
 import com.kcbranding.keycloak.ui.BrandingUiTabProviderFactory;
@@ -169,8 +170,73 @@ public class BrandingAdminResource {
         return Response.noContent().build();
     }
 
+    /** Built-in and custom layouts available to this realm. */
+    @GET
+    @Path("layouts")
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<Map<String, Object>> listLayouts() {
+        auth.realm().requireViewRealm();
+        return provider.listLayouts(realm).stream().map(l -> {
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("name", l.getName());
+            m.put("source", l.getSource().name().toLowerCase(java.util.Locale.ROOT));
+            m.put("extends", l.getBase());
+            return m;
+        }).toList();
+    }
+
+    @GET
+    @Path("layouts/{name}")
+    @Produces("text/css")
+    public String getLayout(@PathParam("name") String name) {
+        auth.realm().requireViewRealm();
+        return provider.findLayout(realm, name).filter(BrandingLayout::isCustom)
+                .map(BrandingLayout::getCss).orElseThrow(NotFoundException::new);
+    }
+
+    /**
+     * Uploads (or replaces) a custom layout for this realm. Start the CSS with
+     * {@code /* extends: <built-in> *&#47;} to build on a built-in layout; then select it with
+     * {@code "layout": "<name>"}.
+     */
+    @PUT
+    @Path("layouts/{name}")
+    @Consumes({"text/css", MediaType.TEXT_PLAIN, MediaType.WILDCARD})
+    public Response uploadLayout(@PathParam("name") String name, String css) {
+        auth.realm().requireManageRealm();
+        if (!BrandingLayout.isValidName(name) || BrandingLayout.isBuiltIn(name)) {
+            throw new BadRequestException(error("Layout names use lowercase letters, digits and dashes, "
+                    + "and cannot replace a built-in layout " + BrandingLayout.BUILT_IN));
+        }
+        if (!BrandingLayout.isValidCss(css)) {
+            throw new BadRequestException(error("Layout CSS must be non-empty and at most "
+                    + BrandingLayout.MAX_CSS_BYTES / 1024 + " KiB"));
+        }
+        provider.saveRealmLayout(realm, name, css);
+        adminEvent.operation(OperationType.UPDATE).resourcePath(session.getContext().getUri()).success();
+        return Response.noContent().build();
+    }
+
+    @DELETE
+    @Path("layouts/{name}")
+    public Response deleteLayout(@PathParam("name") String name) {
+        auth.realm().requireManageRealm();
+        if (!provider.deleteRealmLayout(realm, name)) {
+            throw new NotFoundException();
+        }
+        adminEvent.operation(OperationType.DELETE).resourcePath(session.getContext().getUri()).success();
+        return Response.noContent().build();
+    }
+
     private Map<String, String> validated(Map<String, Object> body) {
         BrandingValidator.Result result = BrandingValidator.validate(body);
+        String layout = result.values().get(BrandingField.LAYOUT.key());
+        if (result.isValid() && layout != null && !layout.isEmpty() && provider.findLayout(realm, layout).isEmpty()) {
+            throw new BadRequestException(Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("error", "Invalid branding configuration",
+                            "details", List.of("layout: unknown layout '" + layout + "'; see GET .../branding/layouts")))
+                    .type(MediaType.APPLICATION_JSON).build());
+        }
         if (!result.isValid()) {
             throw new BadRequestException(Response.status(Response.Status.BAD_REQUEST)
                     .entity(Map.of("error", "Invalid branding configuration", "details", result.errors()))

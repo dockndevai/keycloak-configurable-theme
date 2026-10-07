@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import com.kcbranding.keycloak.config.BrandingConfig;
+import com.kcbranding.keycloak.config.BrandingLayout;
 import org.keycloak.models.RealmModel;
 import org.keycloak.provider.Provider;
 
@@ -33,6 +34,25 @@ public interface BrandingProvider extends Provider {
     void saveRealmAsset(RealmModel realm, String name, byte[] content);
 
     boolean deleteRealmAsset(RealmModel realm, String name);
+
+    /**
+     * Finds a layout by name: built-in layouts first, then a layout uploaded to the realm, then
+     * {@code <assets-dir>/<realm>/layouts/<name>.css}, then {@code <assets-dir>/layouts/<name>.css}.
+     */
+    Optional<BrandingLayout> findLayout(RealmModel realm, String name);
+
+    /** Built-in layouts plus every custom layout available to the realm (realm uploads win over files). */
+    List<BrandingLayout> listLayouts(RealmModel realm);
+
+    void saveRealmLayout(RealmModel realm, String name, String css);
+
+    boolean deleteRealmLayout(RealmModel realm, String name);
+
+    /**
+     * The layout to render: the configured one when it exists, otherwise {@code centered}, so a
+     * removed layout file never breaks the login page.
+     */
+    BrandingLayout resolveLayout(RealmModel realm, BrandingConfig config);
 
     /** Maximum accepted upload size in bytes. */
     int maxAssetBytes();

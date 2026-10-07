@@ -7,6 +7,7 @@ import java.util.Map;
 
 import com.kcbranding.keycloak.config.BrandingConfig;
 import com.kcbranding.keycloak.config.BrandingField;
+import com.kcbranding.keycloak.config.BrandingLayout;
 import com.kcbranding.keycloak.config.BrandingValidator;
 import com.kcbranding.keycloak.css.CssGenerator;
 import com.kcbranding.keycloak.spi.BrandingProvider;
@@ -103,6 +104,23 @@ public class BrandingResource {
         return provider.findAsset(realm, name)
                 .map(asset -> Responses.asset(request, asset))
                 .orElseThrow(NotFoundException::new);
+    }
+
+    /** Stylesheet of a custom layout (built-in layouts are part of the theme and have none). */
+    @GET
+    @Path("layouts/{name: [a-z][a-z0-9-]{0,39}}.css")
+    @Produces("text/css")
+    public Response layoutCss(@PathParam("name") String name, @Context Request request) {
+        BrandingLayout layout = provider.findLayout(realm, name)
+                .filter(BrandingLayout::isCustom)
+                .orElseThrow(NotFoundException::new);
+        EntityTag etag = new EntityTag(layout.version());
+        Response.ResponseBuilder notModified = request.evaluatePreconditions(etag);
+        if (notModified != null) {
+            return notModified.build();
+        }
+        return Response.ok(layout.getCss(), "text/css; charset=utf-8").tag(etag)
+                .cacheControl(Responses.cache(60)).header("X-Content-Type-Options", "nosniff").build();
     }
 
     private Response configured(Request request, BrandingField field) {

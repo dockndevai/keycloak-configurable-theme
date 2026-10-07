@@ -1,6 +1,7 @@
 package com.kcbranding.keycloak.spi;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -10,10 +11,14 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
+import java.util.stream.Stream;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.kcbranding.keycloak.config.BrandingConfig;
+import com.kcbranding.keycloak.config.BrandingField;
 import com.kcbranding.keycloak.config.BrandingFileSource;
+import com.kcbranding.keycloak.config.BrandingLayout;
 import com.kcbranding.keycloak.config.BrandingValidator;
 import jakarta.ws.rs.core.UriBuilder;
 import org.jboss.logging.Logger;
@@ -28,6 +33,8 @@ public class DefaultBrandingProvider implements BrandingProvider {
 
     public static final String CONFIG_ATTRIBUTE = "branding.config";
     public static final String ASSET_ATTRIBUTE_PREFIX = "branding.asset.";
+    public static final String LAYOUT_ATTRIBUTE_PREFIX = "branding.layout.";
+    private static final String LAYOUTS_DIR = "layouts";
 
     private static final Map<String, String> CONTENT_TYPES = Map.ofEntries(
             Map.entry("png", "image/png"),
@@ -164,6 +171,114 @@ public class DefaultBrandingProvider implements BrandingProvider {
         }
         realm.removeAttribute(key);
         return true;
+    }
+
+    @Override
+    public Optional<BrandingLayout> findLayout(RealmModel realm, String name) {
+        if (!BrandingLayout.isValidName(name)) {
+            return Optional.empty();
+        }
+        if (BrandingLayout.isBuiltIn(name)) {
+            return Optional.of(BrandingLayout.builtIn(name));
+        }
+        String stored = realm.getAttribute(LAYOUT_ATTRIBUTE_PREFIX + name);
+        if (stored != null) {
+            return Optional.of(BrandingLayout.custom(name, stored, BrandingLayout.Source.REALM));
+        }
+        for (Path dir : layoutDirs(realm)) {
+            Path file = dir.resolve(name + ".css").normalize();
+            if (file.startsWith(assetsDir) && Files.isRegularFile(file)) {
+                try {
+                    String css = Files.readString(file, StandardCharsets.UTF_8);
+                    if (BrandingLayout.isValidCss(css)) {
+                        return Optional.of(BrandingLayout.custom(name, css, BrandingLayout.Source.FILE));
+                    }
+                    LOG.warnf("Ignoring layout %s: empty or larger than %d bytes", file, BrandingLayout.MAX_CSS_BYTES);
+                } catch (IOException e) {
+                    LOG.warnf(e, "Could not read layout %s", file);
+                }
+            }
+        }
+        return Optional.empty();
+    }
+
+    @Override
+    public List<BrandingLayout> listLayouts(RealmModel realm) {
+        Map<String, BrandingLayout> custom = new TreeMap<>();
+        // Lowest priority first so realm-specific sources overwrite global ones.
+        List<Path> dirs = new ArrayList<>(layoutDirs(realm));
+        java.util.Collections.reverse(dirs);
+        for (Path dir : dirs) {
+            if (!Files.isDirectory(dir)) {
+                continue;
+            }
+            try (Stream<Path> files = Files.list(dir)) {
+                files.map(f -> f.getFileName().toString())
+                        .filter(f -> f.endsWith(".css"))
+                        .map(f -> f.substring(0, f.length() - 4))
+                        .filter(n -> BrandingLayout.isValidName(n) && !BrandingLayout.isBuiltIn(n))
+                        .forEach(n -> findLayoutInDir(dir, n).ifPresent(l -> custom.put(n, l)));
+            } catch (IOException e) {
+                LOG.warnf(e, "Could not list layouts in %s", dir);
+            }
+        }
+        realm.getAttributes().forEach((key, value) -> {
+            if (key.startsWith(LAYOUT_ATTRIBUTE_PREFIX)) {
+                String n = key.substring(LAYOUT_ATTRIBUTE_PREFIX.length());
+                custom.put(n, BrandingLayout.custom(n, value, BrandingLayout.Source.REALM));
+            }
+        });
+        List<BrandingLayout> all = new ArrayList<>();
+        BrandingLayout.BUILT_IN.forEach(n -> all.add(BrandingLayout.builtIn(n)));
+        all.addAll(custom.values());
+        return all;
+    }
+
+    private Optional<BrandingLayout> findLayoutInDir(Path dir, String name) {
+        try {
+            String css = Files.readString(dir.resolve(name + ".css"), StandardCharsets.UTF_8);
+            return BrandingLayout.isValidCss(css)
+                    ? Optional.of(BrandingLayout.custom(name, css, BrandingLayout.Source.FILE))
+                    : Optional.empty();
+        } catch (IOException e) {
+            return Optional.empty();
+        }
+    }
+
+    private List<Path> layoutDirs(RealmModel realm) {
+        return List.of(assetsDir.resolve(realm.getName()).resolve(LAYOUTS_DIR), assetsDir.resolve(LAYOUTS_DIR));
+    }
+
+    @Override
+    public void saveRealmLayout(RealmModel realm, String name, String css) {
+        if (!BrandingLayout.isValidName(name) || BrandingLayout.isBuiltIn(name)) {
+            throw new IllegalArgumentException("Invalid layout name");
+        }
+        if (!BrandingLayout.isValidCss(css)) {
+            throw new IllegalArgumentException("Layout CSS must be non-empty and at most "
+                    + BrandingLayout.MAX_CSS_BYTES / 1024 + " KiB");
+        }
+        realm.setAttribute(LAYOUT_ATTRIBUTE_PREFIX + name, css);
+    }
+
+    @Override
+    public boolean deleteRealmLayout(RealmModel realm, String name) {
+        String key = LAYOUT_ATTRIBUTE_PREFIX + name;
+        if (realm.getAttribute(key) == null) {
+            return false;
+        }
+        realm.removeAttribute(key);
+        return true;
+    }
+
+    @Override
+    public BrandingLayout resolveLayout(RealmModel realm, BrandingConfig config) {
+        String name = config.get(BrandingField.LAYOUT);
+        return findLayout(realm, name).orElseGet(() -> {
+            LOG.warnf("Layout '%s' configured for realm %s was not found; using '%s'",
+                    name, realm.getName(), BrandingLayout.DEFAULT_BASE);
+            return BrandingLayout.builtIn(BrandingLayout.DEFAULT_BASE);
+        });
     }
 
     @Override

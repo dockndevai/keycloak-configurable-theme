@@ -139,7 +139,7 @@ URL settings (`logoUrl`, `logoDarkUrl`, `faviconUrl`, `backgroundImageUrl`, `fon
 | Key | Type | Default | Description |
 |---|---|---|---|
 | `enabled` | boolean | `true` | Enabled. Apply the configurable theme to this realm. When off, the realm's own theme settings are used. |
-| `layout` | enum (centered / split-left / split-right / minimal) | `centered` | Login layout. Arrangement of the login pages. |
+| `layout` | layout (centered / split-left / split-right / minimal, or a custom layout name) | `centered` | Login layout. Built-in, or a [custom layout](#custom-layouts-no-rebuild) plugged in at runtime. |
 | `colorScheme` | enum (auto / light / dark) | `auto` | Color scheme. auto follows the browser preference; light/dark force one scheme. |
 | `primaryColor` | color | `#0066cc` | Primary color. Buttons and highlights. |
 | `primaryHoverColor` | color | — | Primary hover color. Leave empty to derive it from the primary color. |
@@ -183,6 +183,47 @@ URL settings (`logoUrl`, `logoDarkUrl`, `faviconUrl`, `backgroundImageUrl`, `fon
 
 Light and dark mode both work. `colorScheme` can force either one, and `logoDarkUrl` supplies a logo for dark surfaces.
 
+### Custom layouts (no rebuild)
+
+A layout is a CSS file. Add one and it becomes selectable straight away: no rebuild, no restart.
+
+| `card-left` (extends `centered`) | `banner-top` (extends `split-left`) |
+|---|---|
+| ![card-left layout](docs/images/layout-card-left.jpg) | ![banner-top layout](docs/images/layout-banner-top.jpg) |
+
+Both examples are in [`docker/assets/layouts/`](docker/assets/layouts).
+
+**1. Write the CSS.** Start the file with an `extends` comment naming a built-in layout, then style the class `cfg-layout-<name>`:
+
+```css
+/* extends: centered */
+body.cfg-layout-card-left .pf-v5-c-login__container { justify-content: start; padding-inline-start: 6vw; }
+body.cfg-layout-card-left .pf-v5-c-login__main { backdrop-filter: blur(14px); }
+```
+
+The page gets both classes (`cfg-layout-centered cfg-layout-card-left`), so you only write what differs. Extending `split-left` or `split-right` also gives you the hero panel markup (`.cfg-hero`, `.cfg-hero__logo`, `.cfg-hero__title`, `.cfg-hero__text`). All `--cfg-*` colour and size variables are available. Without an `extends` line, the base is `centered`.
+
+**2. Plug it in**, in any of these ways:
+
+| Where | Scope | Notes |
+|---|---|---|
+| `<assets-dir>/layouts/<name>.css` | all realms | Drop the file onto the server or mount it. Edits apply on the next page load. |
+| `<assets-dir>/<realm>/layouts/<name>.css` | one realm | Overrides a global layout of the same name. |
+| `PUT /admin/realms/{realm}/branding/layouts/<name>` (body: the CSS) | one realm | Stored in the database, so it works in clusters. Needs `manage-realm`. |
+
+```bash
+curl -X PUT -H "Authorization: Bearer $TOKEN" -H "Content-Type: text/css" \
+  --data-binary @card-left.css http://localhost:8080/admin/realms/acme/branding/layouts/card-left
+```
+
+**3. Select it** with `"layout": "card-left"` in `branding.json`, the Branding tab or the API. `GET /admin/realms/{realm}/branding/layouts` lists what's available.
+
+Rules:
+- Names use lowercase letters, digits and dashes, and can't replace a built-in layout.
+- The API and the Branding tab reject a layout that doesn't exist.
+- If a selected layout is later removed, the page falls back to `centered` and logs a warning; it never breaks the login page.
+- Layout CSS is served as a separate `text/css` file, never inlined into HTML, with a 100 KiB limit.
+
 ## Admin REST API
 
 All endpoints use a normal admin bearer token. Reads need `view-realm`, writes need `manage-realm`, the same as the built-in realm settings. Changes are recorded as admin events.
@@ -197,6 +238,10 @@ All endpoints use a normal admin bearer token. Reads need `view-realm`, writes n
 | `GET /admin/realms/{realm}/branding/assets` | List uploaded assets |
 | `PUT /admin/realms/{realm}/branding/assets/{name}` | Upload a binary asset (png, jpg, gif, webp, svg, ico, woff/woff2/ttf/otf) |
 | `DELETE /admin/realms/{realm}/branding/assets/{name}` | Delete an uploaded asset |
+| `GET /admin/realms/{realm}/branding/layouts` | Built-in and custom layouts, with their source and base |
+| `GET /admin/realms/{realm}/branding/layouts/{name}` | CSS of a custom layout |
+| `PUT /admin/realms/{realm}/branding/layouts/{name}` | Upload or replace a custom layout (body: CSS) |
+| `DELETE /admin/realms/{realm}/branding/layouts/{name}` | Delete an uploaded layout |
 
 ```bash
 TOKEN=$(curl -s -d client_id=admin-cli -d username=admin -d password=admin -d grant_type=password \
@@ -218,7 +263,7 @@ The **Realm settings → Branding** tab (with `declarative-ui` enabled) edits th
 
 ### Public endpoints
 
-`/realms/{realm}/branding/theme.css`, `config.json`, `logo`, `favicon`, `background` and `assets/{name}`. They serve only presentation data that is already visible on the login page. They support ETags and caching, and SVGs are served with a locked-down `Content-Security-Policy` and `nosniff`.
+`/realms/{realm}/branding/theme.css`, `config.json`, `logo`, `favicon`, `background`, `assets/{name}` and `layouts/{name}.css`. They serve only presentation data that is already visible on the login page. They support ETags and caching, and SVGs are served with a locked-down `Content-Security-Policy` and `nosniff`.
 
 ## Consoles and email
 
@@ -239,14 +284,15 @@ The **Realm settings → Branding** tab (with `declarative-ui` enabled) edits th
 mvn verify
 ```
 
-- **Unit tests** (45): validation and injection cases, config layering, CSS generation, hot reload of the config file.
-- **Integration tests** (9, need Docker): start `quay.io/keycloak/keycloak:26.8.0` with the packaged jar via Testcontainers and check:
+- **Unit tests** (51): validation and injection cases, config layering, CSS generation, hot reload of the config file.
+- **Integration tests** (11, need Docker): start `quay.io/keycloak/keycloak:26.8.0` with the packaged jar via Testcontainers and check:
   - theme enforcement on new realms
   - file defaults and per-realm sections
   - admin API, validation and 401s
   - asset upload, serving and traversal protection
   - CSS ETags
   - the account console loader and opt-outs
+  - plug-in layouts from the assets directory and the API, including fallback when a layout is removed
   - a branded HTML email delivered to a Mailpit SMTP container
 
 Skip the integration tests with `-DskipITs`. To test another Keycloak version, use `-Dkeycloak.version=…`.

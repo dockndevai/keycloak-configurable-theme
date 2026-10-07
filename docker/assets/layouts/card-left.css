@@ -1,0 +1,36 @@
+/* extends: centered */
+/*
+ * card-left: frosted-glass card on the left over a full-page background image.
+ * Plug-in layout: no rebuild needed. Select it with "layout": "card-left".
+ */
+body.cfg-layout-card-left .pf-v5-c-login__container {
+    justify-content: start;
+    padding-inline-start: 6vw;
+}
+
+body.cfg-layout-card-left .pf-v5-c-login__main {
+    --pf-v5-c-login__main--BackgroundColor: rgba(255, 255, 255, 0.82);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+}
+
+html.pf-v5-theme-dark body.cfg-layout-card-left .pf-v5-c-login__main {
+    --pf-v5-c-login__main--BackgroundColor: rgba(27, 29, 33, 0.82);
+}
+
+body.cfg-layout-card-left #kc-header-wrapper.cfg-brand,
+body.cfg-layout-card-left .cfg-footer {
+    color: #fff !important;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+body.cfg-layout-card-left .cfg-logo {
+    content: var(--cfg-logo-dark-url);
+}
+
+@media (max-width: 700px) {
+    body.cfg-layout-card-left .pf-v5-c-login__container {
+        justify-content: center;
+        padding-inline-start: 0;
+    }
+}

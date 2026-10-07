@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.kcbranding.keycloak.config.BrandingConfig;
 import com.kcbranding.keycloak.config.BrandingField;
+import com.kcbranding.keycloak.config.BrandingLayout;
 import com.kcbranding.keycloak.config.FooterLink;
 import com.kcbranding.keycloak.spi.BrandingProvider;
 import org.keycloak.models.KeycloakSession;
@@ -20,6 +21,7 @@ public class BrandingBean {
     private final BrandingConfig config;
     private final BrandingProvider provider;
     private final RealmModel realm;
+    private BrandingLayout layout;
 
     public BrandingBean(BrandingConfig config, BrandingProvider provider, RealmModel realm) {
         this.config = config;
@@ -56,12 +58,37 @@ public class BrandingBean {
         return provider.endpointUrl(realm) + "/theme.css?scope=login&v=" + config.version();
     }
 
+    private BrandingLayout layout() {
+        if (layout == null) {
+            layout = provider.resolveLayout(realm, config);
+        }
+        return layout;
+    }
+
+    /** Name of the rendered layout (built-in or custom). */
     public String getLayout() {
-        return text(BrandingField.LAYOUT);
+        return layout().getName();
+    }
+
+    /** Built-in layout that provides the markup; equals {@link #getLayout()} for built-in layouts. */
+    public String getBaseLayout() {
+        return layout().getBase();
+    }
+
+    /** Body classes: the base layout, plus the custom layout's own class when one is used. */
+    public String getLayoutClasses() {
+        BrandingLayout l = layout();
+        return "cfg-layout-" + l.getBase() + (l.isCustom() ? " cfg-layout-" + l.getName() : "");
+    }
+
+    /** Stylesheet of a custom layout, or empty for built-in layouts. */
+    public String getLayoutCssUrl() {
+        BrandingLayout l = layout();
+        return l.isCustom() ? provider.endpointUrl(realm) + "/layouts/" + l.getName() + ".css?v=" + l.version() : "";
     }
 
     public boolean isSplitLayout() {
-        return getLayout().startsWith("split");
+        return getBaseLayout().startsWith("split");
     }
 
     public String getColorScheme() {

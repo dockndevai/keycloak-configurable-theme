@@ -5,6 +5,16 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.1.0]
+
+### Added
+- **Pluggable layouts, no rebuild:** a layout is a CSS file in `<assets-dir>/layouts/`, `<assets-dir>/<realm>/layouts/`, or uploaded via `PUT /admin/realms/{realm}/branding/layouts/{name}`. A leading `/* extends: <built-in> */` comment reuses a built-in layout's markup and CSS.
+- `GET /admin/realms/{realm}/branding/layouts` lists available layouts; the public `/realms/{realm}/branding/layouts/{name}.css` serves them.
+- Example layouts `card-left` and `banner-top` in the Docker demo.
+
+### Changed
+- `layout` accepts any layout name. The admin API and Branding tab reject unknown layouts, and a removed layout falls back to `centered`.
+
 ## [1.0.1]
 
 ### Changed
@@ -26,6 +36,7 @@ All notable changes to this project are documented here. The format follows
 - Branded account and admin consoles, and a branded HTML email layout.
 - Release jar on GitHub Releases.
 
-[Unreleased]: https://github.com/dockndevai/keycloak-configurable-theme/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/dockndevai/keycloak-configurable-theme/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/dockndevai/keycloak-configurable-theme/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/dockndevai/keycloak-configurable-theme/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/dockndevai/keycloak-configurable-theme/releases/tag/v1.0.0

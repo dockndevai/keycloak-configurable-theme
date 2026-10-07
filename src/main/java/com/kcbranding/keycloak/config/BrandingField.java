@@ -16,8 +16,10 @@ public enum BrandingField {
     // --- General -------------------------------------------------------------------------------
     ENABLED("enabled", Type.BOOLEAN, "true", "Enabled",
             "Apply the configurable theme to this realm. When off, the realm's own theme settings are used."),
-    LAYOUT("layout", Type.ENUM, "centered", "Login layout",
-            "Arrangement of the login pages.", "centered", "split-left", "split-right", "minimal"),
+    LAYOUT("layout", Type.LAYOUT, "centered", "Login layout",
+            "Built-in: centered, split-left, split-right, minimal; or the name of a custom layout "
+                    + "(layouts/<name>.css in the assets directory, or uploaded via the admin API).",
+            "centered", "split-left", "split-right", "minimal"),
     COLOR_SCHEME("colorScheme", Type.ENUM, "auto", "Color scheme",
             "auto follows the browser preference; light/dark force one scheme.", "auto", "light", "dark"),
 
@@ -80,7 +82,8 @@ public enum BrandingField {
     // --- Advanced -------------------------------------------------------------------------------
     CUSTOM_CSS("customCss", Type.CSS, "", "Custom CSS", "Appended to the generated stylesheet for every page.");
 
-    public enum Type { BOOLEAN, ENUM, COLOR, URL, SIZE, FONT, TEXT, LINKS, CSS }
+    /** LAYOUT accepts the built-in options or any custom layout name. */
+    public enum Type { BOOLEAN, ENUM, LAYOUT, COLOR, URL, SIZE, FONT, TEXT, LINKS, CSS }
 
     private static final Map<String, BrandingField> BY_KEY = Arrays.stream(values())
             .collect(Collectors.toUnmodifiableMap(BrandingField::key, Function.identity()));

@@ -28,11 +28,11 @@
      so the theme still renders with stock behaviour if the provider is absent or branding is disabled. -->
 <#assign cfgOn = branding??>
 <#assign cfgScheme = 'auto'>
-<#assign cfgLayout = 'centered'>
+<#assign cfgLayout = 'cfg-layout-centered'>
 <#if cfgOn>
     <#assign cfg = branding>
     <#assign cfgScheme = cfg.colorScheme>
-    <#assign cfgLayout = cfg.layout>
+    <#assign cfgLayout = cfg.layoutClasses>
 </#if>
 <#assign darkMode = darkMode && cfgScheme != 'light'>
 <!DOCTYPE html>
@@ -76,6 +76,9 @@
             <link href="${cfg.fontCssUrl}" rel="stylesheet" />
         </#if>
         <link href="${cfg.cssUrl}" rel="stylesheet" />
+        <#if cfg.layoutCssUrl?has_content>
+            <link href="${cfg.layoutCssUrl}" rel="stylesheet" />
+        </#if>
     </#if>
     <script type="importmap">
         {
@@ -167,7 +170,7 @@
     </script>
 </head>
 
-<body id="keycloak-bg" class="${properties.kcBodyClass!}<#if cfgOn> cfg cfg-layout-${cfgLayout}</#if>" data-page-id="login-${pageId}">
+<body id="keycloak-bg" class="${properties.kcBodyClass!}<#if cfgOn> cfg ${cfgLayout}</#if>" data-page-id="login-${pageId}">
 <div class="${properties.kcLogin!}">
   <#if cfgOn && cfg.splitLayout>
   <aside class="cfg-hero" aria-hidden="<#if cfg.heroTitle?has_content || cfg.heroText?has_content>false<#else>true</#if>">

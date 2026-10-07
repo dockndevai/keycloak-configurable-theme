@@ -22,6 +22,7 @@ public final class BrandingValidator {
     private static final Pattern ROOT_RELATIVE_URL = Pattern.compile("^/(?!/)[^\\s\"'\\\\()<>]{0,2000}$");
     private static final Pattern DATA_URI = Pattern.compile(
             "^data:image/(?:png|jpeg|gif|webp|svg\\+xml|x-icon|vnd\\.microsoft\\.icon);base64,[A-Za-z0-9+/=]{1,700000}$");
+    public static final Pattern LAYOUT_NAME = Pattern.compile("^[a-z][a-z0-9-]{0,39}$");
     public static final Pattern ASSET_NAME = Pattern.compile(
             "^[A-Za-z0-9][A-Za-z0-9._-]{0,99}\\.(?:png|jpe?g|gif|webp|svg|ico|woff2?|ttf|otf)$", Pattern.CASE_INSENSITIVE);
 
@@ -72,6 +73,9 @@ public final class BrandingValidator {
                     ? null : "must be true or false";
             case ENUM -> field.options().contains(value.toLowerCase(Locale.ROOT))
                     ? null : "must be one of " + field.options();
+            case LAYOUT -> LAYOUT_NAME.matcher(value.toLowerCase(Locale.ROOT)).matches()
+                    ? null : "must be a built-in layout " + field.options()
+                    + " or a custom layout name (lowercase letters, digits and dashes)";
             case COLOR -> isColor(value) ? null : "must be a hex, rgb(a) or hsl(a) color";
             case SIZE -> SIZE.matcher(value).matches() ? null : "must be a CSS length such as 8px or 2rem";
             case FONT -> FONT.matcher(value).matches() ? null : "contains characters not allowed in a font list";
@@ -85,7 +89,7 @@ public final class BrandingValidator {
 
     private static String normalise(BrandingField field, String value) {
         return switch (field.type()) {
-            case BOOLEAN, ENUM -> value.toLowerCase(Locale.ROOT);
+            case BOOLEAN, ENUM, LAYOUT -> value.toLowerCase(Locale.ROOT);
             default -> value;
         };
     }
