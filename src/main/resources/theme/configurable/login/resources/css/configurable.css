@@ -1,0 +1,250 @@
+/*
+ * Structural rules of the configurable login theme. Values come from custom properties declared by the
+ * per-realm stylesheet (/realms/{realm}/branding/theme.css); every var() has a fallback so the page
+ * also renders when that stylesheet is unavailable.
+ */
+
+/* ---------- Page background ---------------------------------------------------------------- */
+html.login-pf body.cfg {
+    background-color: var(--cfg-bg, #eef1f6);
+    background-image: var(--cfg-bg-image, none);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    color: var(--cfg-text, inherit);
+}
+
+html.login-pf.pf-v5-theme-dark body.cfg {
+    background-color: #1b1d21;
+}
+
+/* Optional translucent overlay over the background image. */
+body.cfg::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: var(--cfg-bg-overlay, transparent);
+    pointer-events: none;
+}
+
+body.cfg .pf-v5-c-login {
+    position: relative;
+    z-index: 1;
+}
+
+/* ---------- Header (logo + realm name) ----------------------------------------------------- */
+body.cfg #kc-header-wrapper.cfg-brand {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--pf-v5-global--spacer--sm);
+    color: var(--cfg-header-text, #1f2937) !important;
+    font-size: 1.75rem;
+    font-weight: 600;
+    text-transform: none;
+    letter-spacing: normal;
+}
+
+html.pf-v5-theme-dark body.cfg #kc-header-wrapper.cfg-brand {
+    color: var(--pf-v5-global--Color--100) !important;
+}
+
+/* Swap to the dark-background logo where needed (no-op when --cfg-logo-dark-url is undefined). */
+html.pf-v5-theme-dark .cfg-logo,
+.cfg-hero__logo {
+    content: var(--cfg-logo-dark-url);
+}
+
+.cfg-logo {
+    display: block;
+    height: var(--cfg-logo-height, 56px);
+    max-width: 100%;
+    object-fit: contain;
+}
+
+/* ---------- Card ----------------------------------------------------------------------------- */
+body.cfg .pf-v5-c-login__container {
+    grid-template-columns: minmax(0, var(--cfg-card-width, 34rem));
+}
+
+body.cfg .pf-v5-c-login__main {
+    --pf-v5-c-login__main--BackgroundColor: var(--cfg-card-bg, var(--pf-v5-global--BackgroundColor--100));
+    border-radius: var(--cfg-radius, 8px);
+    overflow: hidden;
+}
+
+body.cfg .pf-v5-c-login__main-header {
+    border-top-color: var(--cfg-accent, var(--keycloak-card-top-color));
+}
+
+body.cfg .pf-v5-c-form-control,
+body.cfg .pf-v5-c-button,
+body.cfg .pf-v5-c-alert,
+body.cfg .pf-v5-c-tile {
+    border-radius: var(--cfg-radius, 8px);
+}
+
+/* PatternFly's dark palette swaps the primary button color; keep the brand color in both schemes. */
+body.cfg .pf-v5-c-button.pf-m-primary {
+    --pf-v5-c-button--m-primary--BackgroundColor: var(--cfg-primary);
+    --pf-v5-c-button--m-primary--hover--BackgroundColor: var(--cfg-primary-hover);
+    --pf-v5-c-button--m-primary--focus--BackgroundColor: var(--cfg-primary-hover);
+    --pf-v5-c-button--m-primary--active--BackgroundColor: var(--cfg-primary-hover);
+    --pf-v5-c-button--m-primary--Color: #fff;
+    --pf-v5-c-button--m-primary--hover--Color: #fff;
+}
+
+body.cfg a:not(.pf-v5-c-button) {
+    color: var(--cfg-link, var(--pf-v5-global--link--Color));
+}
+
+/* ---------- Announcement banner -------------------------------------------------------------- */
+.cfg-banner {
+    margin-bottom: var(--pf-v5-global--spacer--md);
+    padding: var(--pf-v5-global--spacer--sm) var(--pf-v5-global--spacer--md);
+    display: block;
+}
+
+.cfg-banner .pf-v5-c-alert__title {
+    margin: 0;
+}
+
+/* ---------- Footer below the card ------------------------------------------------------------ */
+.cfg-footer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: var(--pf-v5-global--spacer--sm) var(--pf-v5-global--spacer--lg);
+    padding: 0 var(--pf-v5-global--spacer--md) var(--pf-v5-global--spacer--lg);
+    font-size: var(--pf-v5-global--FontSize--sm);
+    color: var(--cfg-header-text, #1f2937);
+    text-align: center;
+}
+
+html.pf-v5-theme-dark .cfg-footer {
+    color: var(--pf-v5-global--Color--200);
+}
+
+.cfg-footer__links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--pf-v5-global--spacer--md);
+}
+
+body.cfg .cfg-footer a {
+    color: inherit;
+    text-decoration: underline;
+}
+
+/* ---------- Layout: minimal (no card chrome) ------------------------------------------------- */
+body.cfg-layout-minimal .pf-v5-c-login__main {
+    --pf-v5-c-login__main--BackgroundColor: transparent;
+    --pf-v5-c-login__main--BoxShadow: none;
+}
+
+body.cfg-layout-minimal .pf-v5-c-login__main-header {
+    border-top: none;
+}
+
+body.cfg-layout-minimal #kc-header-wrapper.cfg-brand {
+    font-size: 1.25rem;
+}
+
+/* ---------- Layouts: split-left / split-right ---------------------------------------------- */
+/* The background image moves into the hero panel. */
+html.login-pf body.cfg.cfg-layout-split-left,
+html.login-pf body.cfg.cfg-layout-split-right {
+    background-image: none;
+}
+
+body.cfg-layout-split-left::before,
+body.cfg-layout-split-right::before {
+    display: none;
+}
+
+body.cfg-layout-split-left .pf-v5-c-login,
+body.cfg-layout-split-right .pf-v5-c-login {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, max(var(--cfg-card-width, 34rem), 40%));
+    align-items: center;
+    padding: 0;
+    min-height: 100vh;
+}
+
+body.cfg-layout-split-right .pf-v5-c-login {
+    grid-template-columns: minmax(0, max(var(--cfg-card-width, 34rem), 40%)) minmax(0, 1fr);
+}
+
+body.cfg-layout-split-right .cfg-hero {
+    order: 2;
+}
+
+body.cfg-layout-split-left .pf-v5-c-login__container,
+body.cfg-layout-split-right .pf-v5-c-login__container {
+    justify-self: center;
+    padding: var(--pf-v5-global--spacer--2xl) var(--pf-v5-global--spacer--lg);
+}
+
+body.cfg-layout-split-left .pf-v5-c-login__main,
+body.cfg-layout-split-right .pf-v5-c-login__main {
+    --pf-v5-c-login__main--BoxShadow: none;
+}
+
+.cfg-hero {
+    align-self: stretch;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: var(--pf-v5-global--spacer--3xl);
+    color: #fff;
+    background-color: var(--cfg-hero-bg, var(--cfg-primary, #0066cc));
+    background-image: linear-gradient(var(--cfg-bg-overlay, transparent), var(--cfg-bg-overlay, transparent)),
+                      var(--cfg-bg-image, none);
+    background-size: cover;
+    background-position: center;
+}
+
+.cfg-hero__content {
+    max-width: 32rem;
+}
+
+.cfg-hero__logo {
+    height: calc(var(--cfg-logo-height, 56px) * 1.2);
+    max-width: 100%;
+    margin-bottom: var(--pf-v5-global--spacer--xl);
+    object-fit: contain;
+}
+
+.cfg-hero__title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    line-height: 1.15;
+    margin-bottom: var(--pf-v5-global--spacer--md);
+}
+
+.cfg-hero__text {
+    font-size: 1.125rem;
+    line-height: 1.6;
+    opacity: 0.92;
+}
+
+@media (max-width: 900px) {
+    body.cfg-layout-split-left .pf-v5-c-login,
+    body.cfg-layout-split-right .pf-v5-c-login {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .cfg-hero {
+        display: none;
+    }
+}
+
+@media (max-width: 36rem) {
+    body.cfg .pf-v5-c-login__container {
+        grid-template-columns: minmax(0, 1fr);
+        padding-inline: var(--pf-v5-global--spacer--sm);
+    }
+}

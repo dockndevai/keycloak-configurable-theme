@@ -1,0 +1,8 @@
+{
+  "themes": [
+    {
+      "name": "configurable",
+      "types": ["login", "account", "admin", "email"]
+    }
+  ]
+}

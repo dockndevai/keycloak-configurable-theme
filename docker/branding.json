@@ -1,0 +1,30 @@
+{
+  "defaults": {
+    "primaryColor": "#4f46e5",
+    "backgroundColor": "#eef1f6",
+    "logoUrl": "logo.svg",
+    "logoDarkUrl": "logo-dark.svg",
+    "faviconUrl": "favicon.svg",
+    "fontFamily": "'Inter', system-ui, sans-serif",
+    "fontCssUrl": "https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap",
+    "borderRadius": "10px",
+    "footerText": "© 2026 Example Corp",
+    "footerLinks": "Privacy|https://example.com/privacy;Terms|https://example.com/terms;Help|mailto:support@example.com",
+    "consoleHeaderColor": "#1e1b4b"
+  },
+  "realms": {
+    "acme": {
+      "layout": "split-left",
+      "primaryColor": "#0f766e",
+      "heroBackgroundColor": "#134e4a",
+      "logoUrl": "logo.svg",
+      "faviconUrl": "favicon.svg",
+      "headerText": "Acme Portal",
+      "pageTitle": "Sign in · Acme",
+      "heroTitle": "Welcome to Acme",
+      "heroText": "One account for every Acme application. Sign in to continue.",
+      "infoBanner": "Scheduled maintenance on Sunday 02:00–04:00 UTC.",
+      "infoBannerType": "warning"
+    }
+  }
+}

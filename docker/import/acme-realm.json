@@ -1,0 +1,29 @@
+{
+  "realm": "acme",
+  "displayName": "Acme",
+  "enabled": true,
+  "registrationAllowed": true,
+  "resetPasswordAllowed": true,
+  "rememberMe": true,
+  "loginTheme": "keycloak.v2",
+  "users": [
+    {
+      "username": "demo",
+      "email": "demo@acme.test",
+      "firstName": "Demo",
+      "lastName": "User",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "demo",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "default-roles-acme"
+      ]
+    }
+  ]
+}

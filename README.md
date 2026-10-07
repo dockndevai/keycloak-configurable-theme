@@ -1,0 +1,210 @@
+# Keycloak Configurable Theme SPI
+
+One theme for **every realm**. Layout, colours, logo, favicon, fonts, texts, banner, footer, and account/admin console and email branding all come from **configuration**, not from separate theme folders.
+
+Built and tested against **Keycloak 26.8.0** (Java 21).
+
+## How it works
+
+```
+                  ┌────────────── branding SPI (BrandingProvider) ──────────────┐
+ built-in defaults → conf/branding.json "defaults" → branding.json "realms.<name>" → realm overrides
+                  └──────────────────────────────┬──────────────────────────────┘
+                                                 │ effective config per realm
+     ┌──────────────────────┬────────────────────┼─────────────────────┬──────────────────────┐
+ Theme selector        Login forms           Email templates      /realms/{r}/branding    /admin/realms/{r}/branding
+ forces "configurable" exposes `branding`    exposes `branding`    theme.css, config.json,  admin REST API (view/manage-realm)
+ for every realm       to FreeMarker         (branded HTML)       logo, favicon, assets    + Realm settings → Branding tab
+```
+
+| Component | Keycloak SPI | Notes |
+|---|---|---|
+| `BrandingSpi` / `DefaultBrandingProviderFactory` | custom `branding` SPI | Layers the config, stores realm overrides and assets |
+| `ConfigurableThemeSelectorProviderFactory` | `themeSelector` | Returns `configurable` for login, account, admin and email in every realm |
+| `BrandingLoginFormsProviderFactory` | `login` | Extends the FreeMarker provider and adds `branding` to every login, error and info page |
+| `BrandingEmailTemplateProviderFactory` | `emailTemplate` | Same for emails |
+| `BrandingResourceProviderFactory` | `realm-restapi-extension` | Public CSS, assets and console config |
+| `BrandingAdminResourceProviderFactory` | `admin-realm-restapi-extension` | Admin API, guarded by Keycloak's realm permissions |
+| `BrandingUiTabProviderFactory` | `ui-tab` | Native **Realm settings → Branding** tab |
+| `theme/configurable/*` | theme | login (extends `keycloak.v2`), account (`keycloak.v3`), admin (`keycloak.v2`), email (`keycloak`) |
+
+The overriding factories return a positive `order()`, so Keycloak picks them as defaults automatically. No `--spi-...-provider` flags are needed.
+
+## Quick start
+
+```bash
+mvn -DskipITs package
+```
+
+```bash
+docker compose -f docker/docker-compose.yml up
+```
+
+- Login with global defaults: <http://localhost:8080/admin> (`admin` / `admin`, local demo only)
+- Login with `acme` overrides (split layout): <http://localhost:8080/realms/acme/account> (`demo` / `demo`)
+- Edit `docker/branding.json`. Changes apply within the reload interval (5 s in the demo), with no restart.
+
+## Install in your Keycloak
+
+1. Copy `target/keycloak-configurable-theme.jar` to `/opt/keycloak/providers/`.
+2. Optionally put a `branding.json` in `/opt/keycloak/conf/` and shared images in `/opt/keycloak/branding/`.
+3. Run `kc.sh build` (or `start-dev`), then start Keycloak.
+4. Optional: add `--features=declarative-ui` for the admin-console Branding tab (experimental Keycloak feature). Without it, use the REST API.
+
+Keycloak logs `KC-SERVICES0047 ... implementing the internal SPI` for the login, email and REST extensions. This is expected for these SPIs; it means they may change between Keycloak versions, so re-run the integration tests when upgrading.
+
+### SPI options
+
+| Option (CLI / env) | Default | Description |
+|---|---|---|
+| `--spi-branding--default--config-file` / `KC_SPI_BRANDING__DEFAULT__CONFIG_FILE` | `<kc.home>/conf/branding.json` | Global config file |
+| `--spi-branding--default--assets-dir` / `KC_SPI_BRANDING__DEFAULT__ASSETS_DIR` | `<kc.home>/branding` | Shared assets (`<dir>/<realm>/<file>` overrides `<dir>/<file>`) |
+| `--spi-branding--default--reload-interval` | `10` | Seconds between checks of the config file for changes |
+| `--spi-branding--default--max-asset-size` | `512` | Maximum upload size in KiB |
+| `--spi-theme-selector--configurable--theme-name` | `configurable` | Theme forced on all realms |
+| `--spi-theme-selector--configurable--types` | `login,account,admin,email` | Which theme types are forced |
+
+## Configuration
+
+### Precedence (lowest → highest)
+
+1. Built-in defaults
+2. `branding.json` → `defaults` (all realms)
+3. `branding.json` → `realms.<realm-name>`
+4. Realm overrides set via the admin REST API or the admin-console tab. They are stored in the realm (attribute `branding.config`), so they live in the database and work in clusters.
+
+An empty value means "inherit from the layer below". Invalid values in the file are logged and ignored, so one typo cannot break the login page. Invalid values sent to the API are rejected with `400`.
+
+### `branding.json`
+
+```json
+{
+  "defaults": { "primaryColor": "#4f46e5", "logoUrl": "logo.svg", "footerText": "© 2026 Example Corp" },
+  "realms":   { "acme": { "layout": "split-left", "heroTitle": "Welcome to Acme", "primaryColor": "#0f766e" } }
+}
+```
+
+URL settings (`logoUrl`, `logoDarkUrl`, `faviconUrl`, `backgroundImageUrl`, `fontCssUrl`) accept any of:
+- an `https://…` URL
+- a root-relative `/path`
+- an image `data:` URI
+- an **asset name** such as `logo.svg`, looked up first in the realm's uploaded assets, then in `<assets-dir>/<realm>/`, then in `<assets-dir>/`
+
+### All settings
+
+| Key | Type | Default | Description |
+|---|---|---|---|
+| `enabled` | boolean | `true` | Enabled. Apply the configurable theme to this realm. When off, the realm's own theme settings are used. |
+| `layout` | enum (centered / split-left / split-right / minimal) | `centered` | Login layout. Arrangement of the login pages. |
+| `colorScheme` | enum (auto / light / dark) | `auto` | Color scheme. auto follows the browser preference; light/dark force one scheme. |
+| `primaryColor` | color | `#0066cc` | Primary color. Buttons and highlights. |
+| `primaryHoverColor` | color | — | Primary hover color. Leave empty to derive it from the primary color. |
+| `accentColor` | color | — | Accent color. Top border of the login card. Defaults to the primary color. |
+| `linkColor` | color | — | Link color. Defaults to the primary color. |
+| `backgroundColor` | color | `#eef1f6` | Page background color |
+| `backgroundImageUrl` | url | — | Page background image. URL, data URI or uploaded asset name. |
+| `backgroundOverlay` | color | — | Background overlay. Translucent color laid over the background image, e.g. rgba(0,0,0,0.4). |
+| `cardBackgroundColor` | color | `#ffffff` | Card background color. Login card background in light mode. |
+| `textColor` | color | `#151515` | Text color. Body text in light mode. |
+| `headerTextColor` | color | `#1f2937` | Header text color. Realm name shown above the card. |
+| `fontFamily` | font | — | Font family. CSS font-family list, e.g. 'Inter', sans-serif. |
+| `fontCssUrl` | url | — | Font stylesheet URL. Stylesheet that defines the font, e.g. a Google Fonts URL. |
+| `borderRadius` | size | `8px` | Corner radius. Buttons, inputs and card. |
+| `cardWidth` | size | `34rem` | Card width. Maximum width of the login card. |
+| `logoUrl` | url | — | Logo. URL, data URI or uploaded asset name. |
+| `logoDarkUrl` | url | — | Logo for dark backgrounds. Used in dark mode, on the split-layout side panel and in the console header. Defaults to the logo. |
+| `logoHeight` | size | `56px` | Logo height |
+| `faviconUrl` | url | — | Favicon. URL, data URI or uploaded asset name. |
+| `pageTitle` | text | — | Browser title. Replaces the browser tab title. |
+| `headerText` | text | — | Header text. Replaces the realm display name above the card. |
+| `showRealmName` | boolean | `true` | Show realm name. Show the header text next to / below the logo. |
+| `heroTitle` | text | — | Hero title. Headline of the side panel in split layouts. |
+| `heroText` | text | — | Hero text. Paragraph of the side panel in split layouts. |
+| `heroBackgroundColor` | color | — | Hero background color. Side panel color in split layouts. Defaults to the primary color. |
+| `infoBanner` | text | — | Announcement banner. Message shown at the top of every login page. |
+| `infoBannerType` | enum (info / success / warning / danger) | `info` | Banner type |
+| `footerText` | text | — | Footer text. Shown below the login card and in emails. |
+| `footerLinks` | links | — | Footer links. Entries as Label\|https://url separated by ';' or new lines. |
+| `applyToAccount` | boolean | `true` | Brand the account console |
+| `applyToAdmin` | boolean | `true` | Brand the admin console. Takes effect on the realm that hosts the admin console (normally master). |
+| `applyToEmail` | boolean | `true` | Brand emails |
+| `consoleHeaderColor` | color | — | Console header color. Masthead color of the account and admin consoles. |
+| `customCss` | css | — | Custom CSS. Appended to the generated stylesheet for every page. |
+
+### Layouts
+
+- `centered`: the stock card, centred on the page background (colour or image, with an optional overlay).
+- `split-left` / `split-right`: a hero panel (logo, title, text, background image) beside the form. Below 900px it collapses to one column.
+- `minimal`: no card chrome; the form sits directly on the page.
+
+Light and dark mode both work. `colorScheme` can force either one, and `logoDarkUrl` supplies a logo for dark surfaces.
+
+## Admin REST API
+
+All endpoints use a normal admin bearer token. Reads need `view-realm`, writes need `manage-realm`, the same as the built-in realm settings. Changes are recorded as admin events.
+
+| Method & path | Description |
+|---|---|
+| `GET /admin/realms/{realm}/branding` | `{ overrides, effective, version }` |
+| `GET /admin/realms/{realm}/branding/schema` | Field catalogue (key, type, default, options) |
+| `PUT /admin/realms/{realm}/branding` | Replace all realm overrides |
+| `PATCH /admin/realms/{realm}/branding` | Merge keys; an empty string removes a key |
+| `DELETE /admin/realms/{realm}/branding` | Remove all realm overrides |
+| `GET /admin/realms/{realm}/branding/assets` | List uploaded assets |
+| `PUT /admin/realms/{realm}/branding/assets/{name}` | Upload a binary asset (png, jpg, gif, webp, svg, ico, woff/woff2/ttf/otf) |
+| `DELETE /admin/realms/{realm}/branding/assets/{name}` | Delete an uploaded asset |
+
+```bash
+TOKEN=$(curl -s -d client_id=admin-cli -d username=admin -d password=admin -d grant_type=password \
+  http://localhost:8080/realms/master/protocol/openid-connect/token | jq -r .access_token)
+```
+
+```bash
+curl -X PUT -H "Authorization: Bearer $TOKEN" -H "Content-Type: image/svg+xml" \
+  --data-binary @logo.svg http://localhost:8080/admin/realms/acme/branding/assets/logo.svg
+```
+
+```bash
+curl -X PATCH -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"logoUrl":"logo.svg","layout":"split-right","infoBanner":"Maintenance tonight"}' \
+  http://localhost:8080/admin/realms/acme/branding
+```
+
+The **Realm settings → Branding** tab (with `declarative-ui` enabled) edits the same overrides. Every field starts as *inherit*, so saving the form only pins the values you changed. Changes made through the REST API also show up in the tab.
+
+### Public endpoints
+
+`/realms/{realm}/branding/theme.css`, `config.json`, `logo`, `favicon`, `background` and `assets/{name}`. They serve only presentation data that is already visible on the login page. They support ETags and caching, and SVGs are served with a locked-down `Content-Security-Policy` and `nosniff`.
+
+## Consoles and email
+
+- **Account console** (`/realms/{realm}/account`) and **admin console**: a small loader script applies the realm's generated CSS, logo, favicon, fonts and colour scheme. The admin console is branded with the config of the realm that hosts it (normally `master`). Turn this off per realm with `applyToAccount` / `applyToAdmin`.
+- **Emails**: every HTML email is wrapped in a branded layout (logo, primary colour, footer text). The message texts stay Keycloak's own. Turn this off with `applyToEmail`.
+- `enabled: false` gives a realm back its own theme settings.
+
+## Security notes
+
+- Every value that ends up in CSS is checked against a strict grammar: colours, lengths, font lists and URLs without quotes or parentheses. Values cannot break out of a declaration; unit tests cover injection attempts.
+- Template texts are HTML-escaped by FreeMarker. Footer links only allow `http(s)`, `mailto:` and root-relative URLs.
+- `customCss` is free-form by design. Only realm admins (`manage-realm`) can set it, and it is served as `text/css`, never inlined into HTML.
+- Asset names are restricted to simple file names with image or font extensions. Content types come from the extension, and paths are confined to the assets directory.
+
+## Development and tests
+
+```bash
+mvn verify
+```
+
+- **Unit tests** (45): validation and injection cases, config layering, CSS generation, hot reload of the config file.
+- **Integration tests** (9, need Docker): start `quay.io/keycloak/keycloak:26.8.0` with the packaged jar via Testcontainers and check:
+  - theme enforcement on new realms
+  - file defaults and per-realm sections
+  - admin API, validation and 401s
+  - asset upload, serving and traversal protection
+  - CSS ETags
+  - the account console loader and opt-outs
+  - a branded HTML email delivered to a Mailpit SMTP container
+
+Skip the integration tests with `-DskipITs`. To test another Keycloak version, use `-Dkeycloak.version=…`.
+
+The docker-compose setup disables theme caching, so template and CSS edits show up after `mvn package` and a container restart.

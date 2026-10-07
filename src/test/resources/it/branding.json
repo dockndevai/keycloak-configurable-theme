@@ -1,0 +1,15 @@
+{
+  "defaults": {
+    "primaryColor": "#123abc",
+    "logoUrl": "it-logo.svg",
+    "footerText": "IT footer",
+    "footerLinks": "Privacy|https://example.com/privacy"
+  },
+  "realms": {
+    "it": {
+      "layout": "split-left",
+      "heroTitle": "Hello from the file",
+      "primaryColor": "#0f766e"
+    }
+  }
+}

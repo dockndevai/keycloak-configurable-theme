@@ -1,0 +1,30 @@
+/* Console rules consuming the --cfg-* variables from /realms/{realm}/branding/theme.css?scope=console. */
+html.cfg-console .pf-v5-c-masthead {
+    --pf-v5-c-masthead--BackgroundColor: var(--cfg-console-header, var(--pf-v5-global--BackgroundColor--dark-100));
+}
+
+/* The dark palette paints the masthead toolbar separately; let it inherit the header color. */
+html.cfg-console .pf-v5-c-masthead .pf-v5-c-toolbar {
+    --pf-v5-c-toolbar--BackgroundColor: transparent;
+}
+
+/* Swap the masthead logo for the configured one (no-op when --cfg-logo-url is not defined). */
+html.cfg-console .pf-v5-c-masthead__brand img,
+html.cfg-console .pf-v5-c-masthead .pf-v5-c-brand {
+    content: var(--cfg-console-logo-url);
+    max-height: 40px;
+    width: auto;
+}
+
+html.cfg-console {
+    font-family: var(--pf-v5-global--FontFamily--text);
+}
+
+html.cfg-console .pf-v5-c-button.pf-m-primary {
+    --pf-v5-c-button--m-primary--BackgroundColor: var(--cfg-primary);
+    --pf-v5-c-button--m-primary--hover--BackgroundColor: var(--cfg-primary-hover);
+    --pf-v5-c-button--m-primary--focus--BackgroundColor: var(--cfg-primary-hover);
+    --pf-v5-c-button--m-primary--active--BackgroundColor: var(--cfg-primary-hover);
+    --pf-v5-c-button--m-primary--Color: #fff;
+    --pf-v5-c-button--m-primary--hover--Color: #fff;
+}

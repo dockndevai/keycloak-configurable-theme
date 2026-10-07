@@ -1,0 +1,28 @@
+# Local demo: Keycloak 26.8.0 with the configurable theme provider.
+#   mvn -DskipITs package && docker compose -f docker/docker-compose.yml up
+# Admin console: http://localhost:8080/admin  (admin / admin, local development only)
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:${KEYCLOAK_VERSION:-26.8.0}
+    command:
+      - start-dev
+      - --import-realm
+      # Optional: enables the native "Realm settings > Branding" tab in the admin console.
+      - --features=declarative-ui
+      # Theme caching off so template/CSS edits show up immediately during development.
+      - --spi-theme--cache-themes=false
+      - --spi-theme--cache-templates=false
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      # Branding SPI options (all optional; these are the defaults inside the container).
+      KC_SPI_BRANDING__DEFAULT__CONFIG_FILE: /opt/keycloak/conf/branding.json
+      KC_SPI_BRANDING__DEFAULT__ASSETS_DIR: /opt/keycloak/branding
+      KC_SPI_BRANDING__DEFAULT__RELOAD_INTERVAL: "5"
+    ports:
+      - "8080:8080"
+    volumes:
+      - ../target/keycloak-configurable-theme.jar:/opt/keycloak/providers/keycloak-configurable-theme.jar:ro
+      - ./branding.json:/opt/keycloak/conf/branding.json:ro
+      - ./assets:/opt/keycloak/branding:ro
+      - ./import:/opt/keycloak/data/import:ro
