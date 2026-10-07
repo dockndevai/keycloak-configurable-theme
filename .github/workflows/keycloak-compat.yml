@@ -1,0 +1,51 @@
+name: Keycloak compatibility
+
+# The login/email/REST extension points are internal Keycloak SPIs. Run the integration tests weekly
+# against the newest release and the nightly image so breaking changes surface before users hit them.
+on:
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  compat:
+    name: Keycloak ${{ matrix.image }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        image: [latest-release, nightly]
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Resolve image tag
+        id: tag
+        run: |
+          if [ "${{ matrix.image }}" = "nightly" ]; then
+            echo "tag=nightly" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=$(curl -fsS https://repo1.maven.org/maven2/org/keycloak/keycloak-services/maven-metadata.xml | grep -oP '(?<=<release>)[^<]+')" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Integration tests against Keycloak ${{ steps.tag.outputs.tag }}
+        run: mvn -B -ntp verify -Dkeycloak.image.version=${{ steps.tag.outputs.tag }}
+
+      - name: Open an issue on failure
+        if: failure() && github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue create --repo "${{ github.repository }}" \
+            --title "Compatibility failure with Keycloak ${{ steps.tag.outputs.tag }}" \
+            --body "The weekly integration run failed against \`quay.io/keycloak/keycloak:${{ steps.tag.outputs.tag }}\`: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"

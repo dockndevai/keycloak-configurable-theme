@@ -1,8 +1,20 @@
 # Keycloak Configurable Theme SPI
 
+[![CI](https://github.com/dockndevai/keycloak-configurable-theme/actions/workflows/ci.yml/badge.svg)](https://github.com/dockndevai/keycloak-configurable-theme/actions/workflows/ci.yml)
+[![Keycloak compatibility](https://github.com/dockndevai/keycloak-configurable-theme/actions/workflows/keycloak-compat.yml/badge.svg)](https://github.com/dockndevai/keycloak-configurable-theme/actions/workflows/keycloak-compat.yml)
+[![Release](https://img.shields.io/github/v/release/dockndevai/keycloak-configurable-theme)](https://github.com/dockndevai/keycloak-configurable-theme/releases)
+[![Keycloak](https://img.shields.io/badge/Keycloak-26.8.0-4d4d4d)](https://www.keycloak.org)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
+
 One theme for **every realm**. Layout, colours, logo, favicon, fonts, texts, banner, footer, and account/admin console and email branding all come from **configuration**, not from separate theme folders.
 
 Built and tested against **Keycloak 26.8.0** (Java 21).
+
+| Split layout (per-realm config) | Global defaults, centered | Dark mode | Mobile |
+|---|---|---|---|
+| ![Split layout](docs/images/login-split-layout.jpg) | ![Centered](docs/images/login-centered.jpg) | ![Dark](docs/images/login-dark.jpg) | <img src="docs/images/login-mobile.jpg" alt="Mobile" width="160"> |
+
+The same jar and theme produce all four. Only `branding.json` differs per realm.
 
 ## How it works
 
@@ -46,7 +58,27 @@ docker compose -f docker/docker-compose.yml up
 
 ## Install in your Keycloak
 
-1. Copy `target/keycloak-configurable-theme.jar` to `/opt/keycloak/providers/`.
+Pick one:
+
+- **Jar:** download `keycloak-configurable-theme-<version>.jar` from [Releases](https://github.com/dockndevai/keycloak-configurable-theme/releases).
+- **Docker image** (Keycloak plus the provider, pre-built for PostgreSQL, multi-arch):
+  ```bash
+  docker run -p 8080:8080 -v ./branding.json:/opt/keycloak/conf/branding.json \
+    ghcr.io/dockndevai/keycloak-configurable-theme:latest start --optimized --db-url=... --hostname=...
+  ```
+  Tags: `<version>`, `<major>.<minor>`, `<version>-kc<keycloak-version>`, `latest`.
+- **Maven** (to bundle it into your own Keycloak build):
+  ```xml
+  <dependency>
+    <groupId>io.github.dockndevai</groupId>
+    <artifactId>keycloak-configurable-theme</artifactId>
+    <version>VERSION</version>
+  </dependency>
+  ```
+
+Then:
+
+1. Copy the jar to `/opt/keycloak/providers/` (not needed with the Docker image).
 2. Optionally put a `branding.json` in `/opt/keycloak/conf/` and shared images in `/opt/keycloak/branding/`.
 3. Run `kc.sh build` (or `start-dev`), then start Keycloak.
 4. Optional: add `--features=declarative-ui` for the admin-console Branding tab (experimental Keycloak feature). Without it, use the REST API.
@@ -207,4 +239,21 @@ mvn verify
 
 Skip the integration tests with `-DskipITs`. To test another Keycloak version, use `-Dkeycloak.version=…`.
 
-The docker-compose setup disables theme caching, so template and CSS edits show up after `mvn package` and a container restart.
+The docker-compose setup disables theme caching, so template and CSS edits show up after `mvn package` and a container restart. Restart the container whenever you rebuild the jar: Keycloak keeps the mounted jar open and fails to read resources from a file that was replaced underneath it.
+
+## Releases and CI
+
+- **CI** (`ci.yml`): every push and PR runs the unit and integration tests and builds the Docker image.
+- **Release** (`release.yml`): pushing a `vX.Y.Z` tag runs the full test suite, then publishes:
+  - a GitHub Release with the jar and `SHA256SUMS`
+  - the Maven artifact to GitHub Packages
+  - a multi-arch image to GHCR
+  - the artifact to Maven Central, once credentials are configured
+- **Compatibility** (`keycloak-compat.yml`): runs the integration tests every week against the newest Keycloak release and the `nightly` image, and opens an issue if they fail.
+- **Dependabot** opens PRs for new Keycloak versions; CI tests each one.
+
+See [RELEASING.md](RELEASING.md) for the steps and [CHANGELOG.md](CHANGELOG.md) for history.
+
+## License
+
+[Apache License 2.0](LICENSE), the same license as Keycloak.

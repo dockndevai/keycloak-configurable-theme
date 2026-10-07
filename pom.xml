@@ -4,18 +4,49 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.kcbranding</groupId>
+    <!-- io.github.<user> is auto-verified on Maven Central for the GitHub account that owns the repo -->
+    <groupId>io.github.dockndevai</groupId>
     <artifactId>keycloak-configurable-theme</artifactId>
-    <version>1.0.0</version>
+    <!-- Release versions are set from the git tag by .github/workflows/release.yml -->
+    <version>1.0.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>Keycloak Configurable Theme SPI</name>
     <description>One theme for every realm; layout, colours, logo, favicon, texts and console branding driven by configuration.</description>
+    <url>https://github.com/dockndevai/keycloak-configurable-theme</url>
+
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <id>dockndevai</id>
+            <url>https://github.com/dockndevai</url>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:https://github.com/dockndevai/keycloak-configurable-theme.git</connection>
+        <developerConnection>scm:git:git@github.com:dockndevai/keycloak-configurable-theme.git</developerConnection>
+        <url>https://github.com/dockndevai/keycloak-configurable-theme</url>
+    </scm>
+
+    <issueManagement>
+        <system>GitHub</system>
+        <url>https://github.com/dockndevai/keycloak-configurable-theme/issues</url>
+    </issueManagement>
 
     <properties>
         <maven.compiler.release>21</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <keycloak.version>26.8.0</keycloak.version>
+        <!-- Image used by the integration tests; CI overrides it (e.g. nightly) to test runtime compatibility -->
+        <keycloak.image.version>${keycloak.version}</keycloak.image.version>
         <junit.version>5.13.4</junit.version>
         <testcontainers-keycloak.version>4.4.0</testcontainers-keycloak.version>
         <!-- Integration tests need Docker; skip them with -DskipITs -->
@@ -101,7 +132,7 @@
                 <configuration>
                     <skipITs>${skipITs}</skipITs>
                     <systemPropertyVariables>
-                        <keycloak.version>${keycloak.version}</keycloak.version>
+                        <keycloak.version>${keycloak.image.version}</keycloak.version>
                         <provider.jar>${project.build.directory}/${project.build.finalName}.jar</provider.jar>
                     </systemPropertyVariables>
                 </configuration>
@@ -116,4 +147,73 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <!-- mvn -Pcentral deploy: signed sources/javadoc/jar to Maven Central (used by the release workflow) -->
+        <profile>
+            <id>central</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <version>3.3.1</version>
+                        <executions>
+                            <execution>
+                                <id>attach-sources</id>
+                                <goals>
+                                    <goal>jar-no-fork</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <version>3.12.0</version>
+                        <configuration>
+                            <doclint>none</doclint>
+                            <quiet>true</quiet>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>3.2.8</version>
+                        <configuration>
+                            <bestPractices>true</bestPractices>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.sonatype.central</groupId>
+                        <artifactId>central-publishing-maven-plugin</artifactId>
+                        <version>0.11.0</version>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <publishingServerId>central</publishingServerId>
+                            <autoPublish>true</autoPublish>
+                            <waitUntil>validated</waitUntil>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

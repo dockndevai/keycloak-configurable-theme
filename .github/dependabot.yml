@@ -1,0 +1,14 @@
+version: 2
+updates:
+  # Keycloak and test dependencies; each PR runs the full integration suite in CI.
+  - package-ecosystem: maven
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      keycloak:
+        patterns: ['org.keycloak:*']
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
