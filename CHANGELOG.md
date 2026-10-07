@@ -5,6 +5,15 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.0.1]
+
+### Changed
+- Release pipeline: the Docker image and Maven Central publishing run as independent jobs, so one registry failing no longer blocks the others.
+- The Maven artifact is no longer published to GitHub Packages (it needs a login even for public packages). Use the release jar, the Docker image or Maven Central.
+
+### Added
+- README screenshots of the admin-console Branding tab and the branded account console.
+
 ## [1.0.0]
 
 ### Added
@@ -15,7 +24,8 @@ All notable changes to this project are documented here. The format follows
 - Admin-console **Realm settings → Branding** tab (requires the `declarative-ui` feature).
 - Public endpoints for the generated CSS, console config and assets, with ETags and a locked-down SVG content security policy.
 - Branded account and admin consoles, and a branded HTML email layout.
-- Docker image on GHCR, release jar on GitHub Releases, Maven artifact `io.github.dockndevai:keycloak-configurable-theme`.
+- Release jar on GitHub Releases.
 
-[Unreleased]: https://github.com/dockndevai/keycloak-configurable-theme/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/dockndevai/keycloak-configurable-theme/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/dockndevai/keycloak-configurable-theme/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/dockndevai/keycloak-configurable-theme/releases/tag/v1.0.0

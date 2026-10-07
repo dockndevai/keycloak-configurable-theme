@@ -16,6 +16,18 @@ Built and tested against **Keycloak 26.8.0** (Java 21).
 
 The same jar and theme produce all four. Only `branding.json` differs per realm.
 
+### Configure it from the admin console
+
+Each realm gets a **Realm settings → Branding** tab. Every field starts as *inherit*; set only what this realm should change. The admin console itself is branded too (logo and header colour above).
+
+| Colours and layout | Logos, texts, banner |
+|---|---|
+| ![Branding tab: layout and colours](docs/images/admin-branding-tab.jpg) | ![Branding tab: assets and texts](docs/images/admin-branding-tab-texts.jpg) |
+
+Users see the same branding in the account console:
+
+![Branded account console](docs/images/account-console.jpg)
+
 ## How it works
 
 ```
@@ -67,7 +79,7 @@ Pick one:
     ghcr.io/dockndevai/keycloak-configurable-theme:latest start --optimized --db-url=... --hostname=...
   ```
   Tags: `<version>`, `<major>.<minor>`, `<version>-kc<keycloak-version>`, `latest`.
-- **Maven** (to bundle it into your own Keycloak build):
+- **Maven** (to bundle it into your own Keycloak build; available once releases are published to Maven Central):
   ```xml
   <dependency>
     <groupId>io.github.dockndevai</groupId>
@@ -246,7 +258,6 @@ The docker-compose setup disables theme caching, so template and CSS edits show 
 - **CI** (`ci.yml`): every push and PR runs the unit and integration tests and builds the Docker image.
 - **Release** (`release.yml`): pushing a `vX.Y.Z` tag runs the full test suite, then publishes:
   - a GitHub Release with the jar and `SHA256SUMS`
-  - the Maven artifact to GitHub Packages
   - a multi-arch image to GHCR
   - the artifact to Maven Central, once credentials are configured
 - **Compatibility** (`keycloak-compat.yml`): runs the integration tests every week against the newest Keycloak release and the `nightly` image, and opens an issue if they fail.

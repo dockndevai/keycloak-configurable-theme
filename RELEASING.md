@@ -13,9 +13,8 @@ Releases are fully automated from git tags. The version in `pom.xml` stays a `-S
    ```bash
    git push origin v1.0.0
    ```
-4. The **Release** workflow runs the full test suite and then publishes:
+4. The **Release** workflow runs the full test suite and then publishes (the image and Maven Central jobs run independently):
    - a GitHub Release with `keycloak-configurable-theme-1.0.0.jar` and `SHA256SUMS`
-   - Maven: `io.github.dockndevai:keycloak-configurable-theme:1.0.0` to GitHub Packages
    - Docker: `ghcr.io/dockndevai/keycloak-configurable-theme:1.0.0`, `:1.0`, `:1.0.0-kc26.8.0` and `:latest` (amd64 and arm64)
    - Maven Central, if its secrets are configured (see below)
 
