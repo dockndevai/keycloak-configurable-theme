@@ -8,7 +8,11 @@ All notable changes to this project are documented here. The format follows
 ### Added
 - Publishing to Maven Central as `io.github.dockndevai:keycloak-configurable-theme`, with a one-time `scripts/setup-maven-central.sh` for the signing and token secrets.
 
+### Fixed
+- Maven Central publishing from CI: the bundle contained a stray staging metadata file and was rejected. CI now builds with the Maven Wrapper (pinned to Maven 3.9.9), the same Maven used for local builds.
+
 ### Changed
+- Builds use the Maven Wrapper (`./mvnw`) in all workflows.
 - Test and build tooling updated (JUnit 6.1, Maven surefire/failsafe 3.6, source plugin 3.4).
 
 ## [1.1.0]

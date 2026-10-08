@@ -28,11 +28,11 @@ jobs:
           cache: maven
 
       - name: Build and run all tests
-        run: mvn -B -ntp verify
+        run: ./mvnw -B -ntp verify
 
       - name: Check the Docker image builds
         run: |
-          KC_VERSION=$(mvn -q -ntp help:evaluate -Dexpression=keycloak.version -DforceStdout)
+          KC_VERSION=$(./mvnw -q -ntp help:evaluate -Dexpression=keycloak.version -DforceStdout)
           docker build --build-arg KEYCLOAK_VERSION="$KC_VERSION" -t keycloak-configurable-theme:ci .
 
       - uses: actions/upload-artifact@v7
