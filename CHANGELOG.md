@@ -5,6 +5,12 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- Publishing to Maven Central as `io.github.dockndevai:keycloak-configurable-theme`, with a one-time `scripts/setup-maven-central.sh` for the signing and token secrets.
+
+### Changed
+- Test and build tooling updated (JUnit 6.1, Maven surefire/failsafe 3.6, source plugin 3.4).
+
 ## [1.1.0]
 
 ### Added

@@ -79,7 +79,7 @@ Pick one:
     ghcr.io/dockndevai/keycloak-configurable-theme:latest start --optimized --db-url=... --hostname=...
   ```
   Tags: `<version>`, `<major>.<minor>`, `<version>-kc<keycloak-version>`, `latest`.
-- **Maven** (to bundle it into your own Keycloak build; available once releases are published to Maven Central):
+- **Maven Central** (to bundle it into your own Keycloak build):
   ```xml
   <dependency>
     <groupId>io.github.dockndevai</groupId>

@@ -26,27 +26,27 @@ A tag with a suffix such as `v1.1.0-rc.1` is published as a pre-release and does
 
 The first image push creates the package as **private**. To let anyone pull it, open the package under *Packages → keycloak-configurable-theme → Package settings*, set its visibility to public, and link it to this repository.
 
-### Maven Central (optional)
+### Maven Central
 
-1. Sign in at <https://central.sonatype.com> with the GitHub account `dockndevai`. The namespace `io.github.dockndevai` is verified automatically.
-2. Generate a user token: *Account → Generate User Token*.
-3. Create a GPG key for signing and publish the public key:
+The `io.github.dockndevai` namespace is already verified on <https://central.sonatype.com>, and the `dockndevai` signing key (`531B87F307A8A450`) is published on the keyservers. Only the repository secrets need setting once:
+
+1. In Central, create a user token: *Account → Generate User Token*. Keep both parts (username and password) at hand.
+2. Run the setup script in your own terminal. It pipes the private key straight into GitHub and prompts for the passphrase and token, so no secret is printed or stored on disk:
    ```bash
-   gpg --quick-gen-key "keycloak-configurable-theme releases" rsa4096 sign 2y
+   scripts/setup-maven-central.sh
    ```
-   ```bash
-   gpg --keyserver keyserver.ubuntu.com --send-keys <KEY_ID>
-   ```
-4. Add these repository secrets (*Settings → Secrets and variables → Actions*):
+   To use a different key, pass its ID as the first argument.
 
-   | Secret | Value |
-   |---|---|
-   | `CENTRAL_USERNAME` | token username |
-   | `CENTRAL_TOKEN` | token password |
-   | `GPG_PRIVATE_KEY` | output of `gpg --armor --export-secret-keys <KEY_ID>` |
-   | `GPG_PASSPHRASE` | the key's passphrase |
+It sets these repository secrets:
 
-Without these secrets, the `maven-central` job skips itself with a notice and everything else still publishes.
+| Secret | Value |
+|---|---|
+| `GPG_PRIVATE_KEY` | ASCII-armoured private signing key |
+| `GPG_PASSPHRASE` | the key's passphrase |
+| `CENTRAL_USERNAME` | Central user token username |
+| `CENTRAL_TOKEN` | Central user token password |
+
+Without these secrets, the `maven-central` job skips itself with a notice and everything else still publishes. Versions on Central are permanent: a published version can never be changed or deleted, only superseded.
 
 ## Upgrading Keycloak
 
