@@ -39,7 +39,7 @@ jobs:
           fi
 
       - name: Integration tests against Keycloak ${{ steps.tag.outputs.tag }}
-        run: mvn -B -ntp verify -Dkeycloak.image.version=${{ steps.tag.outputs.tag }}
+        run: ./mvnw -B -ntp verify -Dkeycloak.image.version=${{ steps.tag.outputs.tag }}
 
       - name: Open an issue on failure
         if: failure() && github.event_name == 'schedule'

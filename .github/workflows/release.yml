@@ -38,16 +38,16 @@ jobs:
         id: version
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
-          KC_VERSION=$(mvn -q -ntp help:evaluate -Dexpression=keycloak.version -DforceStdout)
+          KC_VERSION=$(./mvnw -q -ntp help:evaluate -Dexpression=keycloak.version -DforceStdout)
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "keycloak=$KC_VERSION" >> "$GITHUB_OUTPUT"
           echo "Releasing $VERSION for Keycloak $KC_VERSION"
 
       - name: Set project version
-        run: mvn -B -ntp versions:set -DnewVersion=${{ steps.version.outputs.version }} -DgenerateBackupPoms=false
+        run: ./mvnw -B -ntp versions:set -DnewVersion=${{ steps.version.outputs.version }} -DgenerateBackupPoms=false
 
       - name: Build and run all tests
-        run: mvn -B -ntp verify
+        run: ./mvnw -B -ntp verify
 
       - name: Prepare release assets
         run: |
@@ -144,16 +144,16 @@ jobs:
           java-version: '21'
           cache: maven
           server-id: central
-          server-username: CENTRAL_USERNAME
-          server-password: CENTRAL_TOKEN
+          server-username-env-var: CENTRAL_USERNAME
+          server-password-env-var: CENTRAL_TOKEN
           gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
-          gpg-passphrase: MAVEN_GPG_PASSPHRASE
+          gpg-passphrase-env-var: MAVEN_GPG_PASSPHRASE
 
       - name: Deploy signed artifacts
         if: env.HAS_CENTRAL == 'true'
         run: |
-          mvn -B -ntp versions:set -DnewVersion=${{ needs.release.outputs.version }} -DgenerateBackupPoms=false
-          mvn -B -ntp -Pcentral deploy -DskipTests -DskipITs
+          ./mvnw -B -ntp versions:set -DnewVersion=${{ needs.release.outputs.version }} -DgenerateBackupPoms=false
+          ./mvnw -B -ntp -Pcentral deploy -DskipTests -DskipITs
         env:
           CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
           CENTRAL_TOKEN: ${{ secrets.CENTRAL_TOKEN }}
