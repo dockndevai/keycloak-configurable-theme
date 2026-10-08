@@ -11,6 +11,14 @@ set -euo pipefail
 REPO="${REPO:-dockndevai/keycloak-configurable-theme}"
 KEY_ID="${1:-531B87F307A8A450}"
 
+# gpg's passphrase prompt and gh's secret prompts both need a real terminal.
+if [ ! -t 0 ] || [ ! -t 1 ]; then
+  echo "Run this in a real terminal (e.g. Terminal.app or iTerm), not through a non-interactive shell:" >&2
+  echo "  cd $(pwd) && scripts/setup-maven-central.sh" >&2
+  exit 1
+fi
+export GPG_TTY="$(tty)"
+
 command -v gh >/dev/null || { echo "gh CLI not found" >&2; exit 1; }
 command -v gpg >/dev/null || { echo "gpg not found (brew install gnupg)" >&2; exit 1; }
 gh auth status >/dev/null 2>&1 || { echo "Run 'gh auth login' first" >&2; exit 1; }
@@ -25,8 +33,16 @@ echo "Repository: $REPO"
 echo "Signing key: $(gpg --list-keys --keyid-format long "$KEY_ID" | awk '/^uid/ {sub(/^uid +(\[[^]]*\] +)?/, ""); print; exit}') ($KEY_ID)"
 echo
 
-echo "1/4  Exporting the private key into secret GPG_PRIVATE_KEY (gpg may ask for the passphrase)..."
-gpg --armor --export-secret-keys "$KEY_ID" | gh secret set GPG_PRIVATE_KEY --repo "$REPO"
+echo "1/4  Exporting the private key into secret GPG_PRIVATE_KEY (gpg will ask for the passphrase)..."
+# Hold the export in memory only, and never store an empty or partial key.
+PRIVATE_KEY="$(gpg --pinentry-mode loopback --armor --export-secret-keys "$KEY_ID")" || true
+if [[ "$PRIVATE_KEY" != *"BEGIN PGP PRIVATE KEY BLOCK"* || "$PRIVATE_KEY" != *"END PGP PRIVATE KEY BLOCK"* ]]; then
+  unset PRIVATE_KEY
+  echo "Export failed: no private key was exported (wrong passphrase or gpg-agent problem). Nothing was stored." >&2
+  exit 1
+fi
+printf '%s\n' "$PRIVATE_KEY" | gh secret set GPG_PRIVATE_KEY --repo "$REPO"
+unset PRIVATE_KEY
 
 echo "2/4  Secret GPG_PASSPHRASE: enter the passphrase of that key."
 gh secret set GPG_PASSPHRASE --repo "$REPO"
