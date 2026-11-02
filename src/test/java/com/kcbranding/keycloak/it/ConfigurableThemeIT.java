@@ -45,7 +45,7 @@ class ConfigurableThemeIT {
             .waitingFor(Wait.forHttp("/livez").forPort(8025));
 
     private static final KeycloakContainer KEYCLOAK =
-            new KeycloakContainer("quay.io/keycloak/keycloak:" + System.getProperty("keycloak.version", "26.8.0"))
+            new KeycloakContainer("quay.io/keycloak/keycloak:" + System.getProperty("keycloak.version", "26.8.1"))
                     .withNetwork(NETWORK)
                     .withProviderLibsFrom(List.of(new File(
                             System.getProperty("provider.jar", "target/keycloak-configurable-theme.jar"))))
