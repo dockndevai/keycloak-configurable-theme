@@ -8,6 +8,12 @@ updates:
     groups:
       keycloak:
         patterns: ['org.keycloak:*']
+    ignore:
+      # The Maven Wrapper is pinned on purpose: with the runner's newer Maven, central-publishing-maven-plugin
+      # left a staging metadata file in the bundle and Maven Central rejected the release (fixed in v1.1.2).
+      # Bump it manually and verify with a real release.
+      - dependency-name: 'org.apache.maven:apache-maven'
+
   - package-ecosystem: github-actions
     directory: /
     schedule:

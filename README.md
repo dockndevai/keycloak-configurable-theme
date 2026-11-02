@@ -3,12 +3,12 @@
 [![CI](https://github.com/dockndevai/keycloak-configurable-theme/actions/workflows/ci.yml/badge.svg)](https://github.com/dockndevai/keycloak-configurable-theme/actions/workflows/ci.yml)
 [![Keycloak compatibility](https://github.com/dockndevai/keycloak-configurable-theme/actions/workflows/keycloak-compat.yml/badge.svg)](https://github.com/dockndevai/keycloak-configurable-theme/actions/workflows/keycloak-compat.yml)
 [![Release](https://img.shields.io/github/v/release/dockndevai/keycloak-configurable-theme)](https://github.com/dockndevai/keycloak-configurable-theme/releases)
-[![Keycloak](https://img.shields.io/badge/Keycloak-26.8.0-4d4d4d)](https://www.keycloak.org)
+[![Keycloak](https://img.shields.io/badge/Keycloak-26.8.1-4d4d4d)](https://www.keycloak.org)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 
 One theme for **every realm**. Layout, colours, logo, favicon, fonts, texts, banner, footer, and account/admin console and email branding all come from **configuration**, not from separate theme folders.
 
-Built and tested against **Keycloak 26.8.0** (Java 21).
+Built and tested against **Keycloak 26.8.1** (Java 21).
 
 | Split layout (per-realm config) | Global defaults, centered | Dark mode | Mobile |
 |---|---|---|---|
@@ -285,7 +285,7 @@ mvn verify
 ```
 
 - **Unit tests** (51): validation and injection cases, config layering, CSS generation, hot reload of the config file.
-- **Integration tests** (11, need Docker): start `quay.io/keycloak/keycloak:26.8.0` with the packaged jar via Testcontainers and check:
+- **Integration tests** (11, need Docker): start `quay.io/keycloak/keycloak:26.8.1` with the packaged jar via Testcontainers and check:
   - theme enforcement on new realms
   - file defaults and per-realm sections
   - admin API, validation and 401s

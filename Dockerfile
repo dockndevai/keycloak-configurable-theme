@@ -2,7 +2,7 @@
 #   mvn -DskipITs package && docker build -t keycloak-configurable-theme .
 # Run with "start --optimized" plus your usual DB/hostname options; mount branding.json at
 # /opt/keycloak/conf/branding.json and shared assets at /opt/keycloak/branding.
-ARG KEYCLOAK_VERSION=26.8.0
+ARG KEYCLOAK_VERSION=26.8.1
 
 FROM quay.io/keycloak/keycloak:${KEYCLOAK_VERSION} AS builder
 ARG KC_DB=postgres

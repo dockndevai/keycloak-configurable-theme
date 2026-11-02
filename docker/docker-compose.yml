@@ -1,9 +1,9 @@
-# Local demo: Keycloak 26.8.0 with the configurable theme provider.
+# Local demo: Keycloak 26.8.1 with the configurable theme provider.
 #   mvn -DskipITs package && docker compose -f docker/docker-compose.yml up
 # Admin console: http://localhost:8080/admin  (admin / admin, local development only)
 services:
   keycloak:
-    image: quay.io/keycloak/keycloak:${KEYCLOAK_VERSION:-26.8.0}
+    image: quay.io/keycloak/keycloak:${KEYCLOAK_VERSION:-26.8.1}
     command:
       - start-dev
       - --import-realm

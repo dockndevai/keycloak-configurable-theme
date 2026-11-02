@@ -5,6 +5,9 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+- Built and tested against Keycloak 26.8.1 (Docker image, demo and integration tests included).
+
 ### Added
 - Publishing to Maven Central as `io.github.dockndevai:keycloak-configurable-theme`, with a one-time `scripts/setup-maven-central.sh` for the signing and token secrets.
 
