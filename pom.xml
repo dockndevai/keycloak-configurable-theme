@@ -49,7 +49,7 @@
         <!-- Image used by the integration tests; CI overrides it (e.g. nightly) to test runtime compatibility -->
         <keycloak.image.version>${keycloak.version}</keycloak.image.version>
         <junit.version>6.1.3</junit.version>
-        <testcontainers-keycloak.version>4.4.0</testcontainers-keycloak.version>
+        <testcontainers-keycloak.version>4.4.1</testcontainers-keycloak.version>
         <!-- Integration tests need Docker; skip them with -DskipITs -->
         <skipITs>false</skipITs>
     </properties>
